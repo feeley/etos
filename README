@@ -1,0 +1,79 @@
+ETOS is an Erlang to Scheme compiler designed at the Universite de
+Montreal.  The Scheme code it generates is compiled to native code
+with the Gambit Scheme compiler, which allows it to achieve good
+performance.
+
+Here are some papers and presentations on ETOS:
+
+- "Compiling Erlang to Scheme", PLILP 1998
+  (http://www.iro.umontreal.ca/~feeley/papers/FeeleyLarosePLILP98.pdf)
+
+- "Status report on the ETOS Erlang to Scheme compiler", Erlang User
+  Conference 1999 (http://www.erlang.org/euc/99/ETOS.ps)
+
+- "Etos: an Erlang to Scheme compiler", Technical Report 1079,
+   1997, DIRO, Universite de Montreal
+   (http://www.iro.umontreal.ca/~feeley/papers/FeeleyLaroseDIRO1079.pdf)
+
+
+1. INSTALLING
+
+Before installing ETOS, you must install the Gambit Scheme compiler
+(http://gambit.iro.umontreal.ca/).  ETOS v2.4 has been tested with
+Gambit v4.6.5 (older versions of Gambit will probably work too, but
+don't go too far back).
+
+Then build ETOS with the command
+
+   % make install
+
+This will place the following files in the bin/ directory:
+
+   etos             the ETOS compiler
+
+   estart           the program loader
+
+   rt-gambit.scm    a Scheme file with macro definitions required
+                    by the Gambit Scheme compiler to compile the
+                    Scheme files produced by ETOS
+
+If you wish to install these files somewhere else, then
+change the definition of INSTALL_DIR in the Makefile before
+the "make install".
+
+Note that on some platforms it can take a long time to compile etos.
+On Mac OS X with LLVM gcc, it takes roughly half an hour on a fast
+machine (with GNU gcc it takes only a few minutes).
+
+
+2. USAGE
+
+Erlang files, with extension .erl, can be compiled by invoking etos:
+
+   % bin/etos hw.erl
+
+By default this will produce the files hw.scm, the Scheme code
+generated, and hw.o1 (or hw.o2, etc) which is the dynamically loadable
+object file produced from hw.scm by the Gambit Scheme compiler.
+
+To execute the program, simply invoke estart with the name of the
+module, "hw" in this case:
+
+   % bin/estart hw
+   "Hello World!"
+
+You can get usage information on these programs with:
+
+   % bin/etos --help
+
+or man pages with:
+
+   % man man/man1/etos.1
+   % man man/man1/estart.1
+
+
+3. BENCHMARKS
+
+The benchmarks can be run with the command:
+
+   % make bench

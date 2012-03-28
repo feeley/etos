@@ -1,0 +1,42 @@
+.TH etos 1 99-08-16 "Universite de Montreal" "USER COMMANDS"
+.SH NAME
+estart \- Loader
+.SH DESCRIPTION
+.LP
+The \fIestart\fR program executes Erlang modules that were compiled
+with \fIetos\fR\&.
+.LP
+.SH SYNOPSIS
+.LP
+.B
+estart file
+.br
+.RS
+.LP
+\fIestart\fR loads an Erlang module that was compiled with \fetos\fR
+to the file \ffile\fR\&.  It then starts a process evaluating
+\fBmodule:start()\fR\&.
+.RE
+.SH OPTIONS
+.LP
+The following options are supported: 
+.RS 2
+.TP 4
+.B
+<no options defined for the moment>
+.RE
+.RE
+.SH ENVIRONMENT VARIABLES
+.RS 2
+.TP 4
+.B
+<no environment variables defined for the moment>
+.RE
+.SH SEE ALSO
+.LP
+etos(1)
+.SH AUTHORS
+.nf
+Patrick Piche - piche@iro\&.umontreal\&.ca
+Marc Feeley - feeley@iro\&.umontreal\&.ca
+.fi

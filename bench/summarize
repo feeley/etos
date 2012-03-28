@@ -1,0 +1,75 @@
+#!/usr/local/bin/gawk -f
+
+function clearvars () {
+  test       = "";
+  user       = "";
+  failed     = 0;
+  crashed    = 0;
+  runtime    = 0;
+  pagefaults = "";
+  swaps      = "";
+}
+
+function output () {
+  if (test != "") {
+
+    failure = "";
+     
+    if ((crashed != 0) && (failed == 0)) {
+       failure = "*** crashed ***";
+    }
+    else if  ((crashed == 0) && (failed != 0)) {
+      failure = "*** failed ***";
+    }
+    else if  ((crashed != 0) && (failed != 0)) {
+      failure = "*** crashed and failed (shouldn't happen!) ***";
+    }
+    
+    if (failure == "") {
+      printf "%-10s %6s %-32s %6s\n", test, user, pagefaults, swaps;
+    }
+    else {
+      printf "%-10s %10s\n", test, failure;
+    }
+  }
+  clearvars();
+}
+
+BEGIN {
+  clearvars();
+}
+
+/^Testing/ {
+  output();
+  test=$2;
+}
+
+/^Running/ {
+  runtime = 1;
+}
+
+runtime == 1 && $0 == "*** wrong result ***" {
+  failed = 1;
+}
+
+runtime == 1 && /^Command .* with non-zero/ {
+  crashed = 1;
+}
+
+runtime == 1 && /^Command terminated by signal/ {
+  crashed = 1;
+}
+
+runtime == 1 && /ERROR/ {
+  crashed = 1;
+}
+
+/runtime = [0-9]* msecs/ {
+  user = $3;
+}
+/[0-9. ]*major\+[0-9. ]*minor/ {
+  pagefaults = $2;
+  swaps      = $3;
+}
+
+END { output() }

@@ -1,0 +1,32 @@
+lalr.scm -- a fast LALR parser generator for Scheme.
+
+The distribution contains the following files:
+
+	. README : this file.
+
+	. lalr.scm : The parser generator. 
+
+	. lr-dvr.scm : The LR(0) driver for the generated parsers.
+
+It has been successfully tested under the following Scheme systems:
+
+	- Gambit v2.2 
+	- Scm 4d3 under DEC Alpha, SUN OS, Linux
+	- MIT-Scheme 7.2.0 (microcode 11.127, runtime 14.160)
+	- Bigloo 1.6
+
+and it should run on any Scheme implementation that provides macros
+and bitwise operations. 
+
+-----------------------------------------------------------------------------
+INSTALLATION:
+
+Just remove the quote in front of the section corresponding to your
+Scheme system (in file lalr.scm).
+
+
+-----------------------------------------------------------------------------
+Send questions, comments, suggestions or bug reports to 
+   boucherd@iro.umontreal.ca
+
+Dominique Boucher -- Universite de Montreal

@@ -1,0 +1,323 @@
+#!/bin/sh
+
+# "run", a shell script to run Erlang benchmarks
+#
+# Please report any errors or extensions to the author:
+#
+#   Marc Feeley (feeley@iro.umontreal.ca)
+
+# -----------------------------------------------------------------------------
+
+error ()
+{
+  echo $1
+  echo '
+Usage: run [-r runs] [-c clean] <erlang-systems> <benchmarks>
+
+<erlang-systems> is the abbreviated name of one or more
+Erlang implementations to use, i.e.:
+
+  jam        for JAM
+  beam       for BEAM
+  beam-c     for BEAM/C
+  beam-t     for BEAM/T
+  hipe       for Hipe
+  etos       for Etos
+  all        for all the above compilers
+
+<benchmarks> is the name of one or more benchmarks
+to use, i.e.:
+
+  all         for all the benchmarks.
+  fib         for the fib benchmark.
+  "fib huff"  for Fibonacci & Huffman.
+
+runs is the number of times to run each benchmark (default is 1).
+
+clean is whether or not to clean out the build directory.
+true = clean.  Useful for testing or inspection.'
+
+  exit
+}
+
+# -----------------------------------------------------------------------------
+
+cleanup ()
+{
+  if [ "$clean" = "true" ] ; then
+     # It's true that technically speaking, we should be in the build
+     # directory when this fcn is called.  Thus, we should be able to
+     # just do rm *.  However, that's kind of dangerous, so instead,
+     # we delete files newer than the mark file that evaluate () makes.
+
+     for x in * ; do
+        if [ $x -nt clean_newer_than_me ] ; then
+          rm $x
+        fi
+     done
+  fi
+  rm clean_newer_than_me
+}
+
+evaluate ()
+{
+  echo > clean_newer_than_me
+  sleep 1
+  {
+  echo
+  echo Testing $1 under $NAME
+  echo Compiling...
+  make_src_code $1
+  $COMP $1
+  i=0
+  while [ "$i" -lt "$NB_RUNS" ]
+  do
+    echo Running...
+    $EXEC $1
+    i=`expr $i + 1`
+  done
+  cleanup
+  } 2>&1 | tee -a ../../results.${NAME}
+
+}
+
+make_src_code ()
+{
+  cat ../../src/$1.erl > $1.erl
+}
+
+# -----------------------------------------------------------------------------
+# Definitions specific to JAM
+
+jam_comp ()
+{
+   {
+      echo "erlc -b jam $1.erl"
+   } | time sh
+   ls -l $1.jam
+}
+
+jam_exec ()
+{
+   {
+      echo echo l\\\($1\\\). $1:start\\\(\\\). \| erl +h 500000
+   } | time sh
+}
+
+JAMDIR="/u/feeley/erlang-47.4.1-jam/erts/bin"
+
+jam_comp_udem ()
+{
+   {
+      echo "$JAMDIR/erlc -b jam $1.erl"
+   } | time sh
+   ls -l $1.jam
+}
+
+jam_exec_udem ()
+{
+   {
+      echo echo l\\\($1\\\). $1:start\\\(\\\). \| $JAMDIR/erl +h 500000
+   } | time sh
+}
+
+# -----------------------------------------------------------------------------
+# Definitions specific to BEAM
+
+beam_comp ()
+{
+   {
+      echo "erlc -b beam $1.erl"
+   } | time sh
+   ls -l $1.beam
+}
+
+beam_exec ()
+{
+   {
+      echo echo l\\\($1\\\). $1:start\\\(\\\). \| erl +h 500000
+   } | time sh
+}
+
+BEAMDIR="/u/feeley/erlang-47.4.1-beam/erts/bin"
+
+beam_comp_udem ()
+{
+   {
+      echo "$BEAMDIR/erlc -b beam $1.erl"
+   } | time sh
+   ls -l $1.beam
+}
+
+beam_exec_udem ()
+{
+   {
+      echo echo l\\\($1\\\). $1:start\\\(\\\). \| $BEAMDIR/erl +h 500000
+   } | time sh
+}
+
+# -----------------------------------------------------------------------------
+# Definitions specific to BEAM/T
+
+beam_t_comp ()
+{
+  {
+     echo echo "c\\\(\\\"$1\\\"\\\)." \| ../../../../erlang/bin/erl
+  } | time sh
+  ls -l $1.jam
+}
+
+beam_t_exec ()
+{
+   echo $1:start\(\). | ../../../../erlang/bin/erl +h 500000
+}
+
+# -----------------------------------------------------------------------------
+# Definitions specific to BEAM/C
+
+beam_c_comp ()
+{
+  {
+     echo echo "c\\\(\\\"$1\\\",fast\\\)." \| $HOME/beamc/bin/erl
+  } | time sh
+  ls -l $1.beam
+}
+
+beam_c_exec ()
+{
+   echo $1:start\(\). | $HOME/beamc/bin/erl +h 500000
+}
+
+# -----------------------------------------------------------------------------
+# Definitions specific to Etos
+
+etos_comp ()
+{
+  time ../../../bin/etos -DETOS $1.erl
+  ls -l $1.o?*
+}
+
+etos_exec ()
+{
+   time ../../../bin/estart -:m10000 $1
+}
+
+# -----------------------------------------------------------------------------
+# Definitions specific to Hipe
+
+hipe_comp ()
+{
+  echo nothing to do
+}
+
+hipe_exec ()
+{
+   {
+      echo echo "c\\\($1\\\). ncm\\\($1\\\). $1:start\\\(\\\)." \| PATH=$PATH:$HOME/jerico-0.27/jam/bin ERLANG_HOME=$HOME/jerico-0.27/jam jerico
+   } | sh
+}
+
+# -----------------------------------------------------------------------------
+
+ALL_BENCHMARKS="barnes fib huff length nrev pseudoknot qsort ring smith stable tak"
+
+ALL_SYSTEMS="jam beam beam-t beam-c hipe etos"
+
+## Arg processing...
+if [ "$#" -lt 2 ]; then
+  error '>>> At least two command line arguments are needed'
+fi
+
+
+cmdline="$0"
+flagsdone=0
+
+NB_RUNS=1
+clean=true
+
+while [ $# -gt 2 ] ; do
+   arg="$1"
+   shift
+   case $arg in
+      -r) NB_RUNS=$1    ; shift ;;
+      -c) clean=$1      ; shift ;;
+       *) error ">>> Unknown argument of $arg given." ;;
+   esac
+done
+
+if [ "$#" -ne 2 ]; then
+  error '>>> Last two arguments must be <systems> and <benchmarks>'
+fi
+
+case "$1" in
+   all) systems="$ALL_SYSTEMS" ;;
+   *)   systems="$1" ;;
+esac
+
+case "$2" in
+   all) benchmarks="$ALL_BENCHMARKS" ;;
+   *)   benchmarks="$2" ;;
+esac
+
+## Run each benchmark under each system...
+for system in $systems ; do
+
+   case "$system" in
+
+       jam) NAME='JAM'
+            COMP=jam_comp
+            EXEC=jam_exec
+            ;;
+
+      beam) NAME='BEAM'
+            COMP=beam_comp
+            EXEC=beam_exec
+            ;;
+
+    beam-t) NAME='BEAM-T'
+            COMP=beam_t_comp
+            EXEC=beam_t_exec
+            ;;
+
+    beam-c) NAME='BEAM-C'
+            COMP=beam_c_comp
+            EXEC=beam_c_exec
+            ;;
+
+      etos) NAME='ETOS'
+            COMP=etos_comp
+            EXEC=etos_exec
+            ;;
+
+      hipe) NAME='Hipe'
+            COMP=hipe_comp
+            EXEC=hipe_exec
+            ;;
+
+         *) error '>>> Unknown system'
+            ;;
+   esac
+
+
+   cd sys/$system
+   if [ $? != 0 ] ; then
+      echo "ERROR: Can't change to directory sys/$system."
+      exit 1
+   fi
+
+   {
+      echo
+      echo '****************************'
+      echo Benchmarking $NAME on `date` under `uname -a`
+   } >> ../../results.${NAME}
+
+   for program in $benchmarks ; do
+      evaluate $program
+   done
+   cd ../..
+   if [ $? != 0 ] ; then
+      echo "ERROR: Can't change back to benchmark directory."
+      exit 1
+   fi
+done
+

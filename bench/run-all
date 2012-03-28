@@ -1,0 +1,6 @@
+#!/bin/bash
+
+#./run -r 10 -c no jam all
+#./run -r 10 -c no beam all
+#./run -r 10 -c no hipe all
+./run -r 10 -c no etos all
